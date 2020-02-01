@@ -28,6 +28,7 @@ func (b *Bank) Init() error {
 	if err != nil {
 		return err
 	}
+
 	b.db.SetMaxOpenConns(2)
 
 	return nil
@@ -38,18 +39,17 @@ func (b *Bank) AddUser(name string, amount float32) error {
 	return err
 }
 
-func (b *Bank) Add(name string, amount float32) error {
-	_, err := b.db.Exec(fmt.Sprintf("update users set amount=amount+%f where name='%s'", amount, name))
+func (b *Bank) Deposit(name string, amount float32) error {
+	_, err := b.db.Exec("update users set amount=amount+? where name=?", amount, name)
 	return err
 }
 
 func (b *Bank) Transfer(from string, to string, amount float32) error {
-	err := b.Add(from, -amount)
+	err := b.Deposit(from, -amount)
 	if err != nil {
 		return err
 	}
-	err = b.Add(to, amount)
-	return err
+	return b.Deposit(to, amount)
 }
 
 func (b *Bank) print() error {
@@ -67,11 +67,7 @@ func (b *Bank) print() error {
 		}
 		fmt.Printf("%s has %f money.\n", name, amount)
 	}
-	err = rows.Err()
-	if err != nil {
-		return err
-	}
-	return nil
+	return rows.Err()
 }
 
 func main() {
@@ -80,39 +76,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	// err = bank.AddUser("gosho", 100)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// err = bank.AddUser("pesho", 100)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// err = bank.Transfer("gosho", "pesho", 50)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// err = bank.print()
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// wg := sync.WaitGroup{}
-	// for i := 0; i < 3; i++ {
-	// 	wg.Add(1)
-	// 	go func() {
-	// 		defer wg.Done()
-	// 		bank.print()
-	// 	}()
-	// }
-	// wg.Wait()
-
 	err = bank.AddUser("miro", 10)
 	if err != nil {
 		panic(err)
 	}
-	err = bank.Add("'; update users set amount=1000000000 where name='miro' -- ", 10)
+
+	err = bank.Deposit("'; update users set amount=10000000000 where name='miro' -- ", 10)
 	if err != nil {
 		panic(err)
 	}
